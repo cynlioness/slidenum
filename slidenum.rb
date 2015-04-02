@@ -15,30 +15,11 @@ def getcolor(value)
 end
 
 class Block
-	attr_reader :row, :col, :value
-	def initialize (window, row, col, value)
+	attr_reader :value
+	def initialize (window, value)
 		@window = window
-		@row = row
-		@col = col
 		@value = value
 		@color = getcolor(value)
-	end
-	def update
-		@window.grid[row][col] = self
-	end
-	def enlist
-		@window.blocks << self
-		self
-	end
-	def row=(row)
-		@window.grid[@row][@col] = nil
-		@row = row
-		update
-	end
-	def col=(col)
-		@window.grid[@row][@col] = nil
-		@col = col
-		update
 	end
 	def draw(row,col)
 		xmin = col * $TILE
@@ -62,20 +43,16 @@ class Minigamewindow < Gosu::Window
 				@grid[row][col] = nil
 			end
 		end
-		@blocks = []
-		@blocks << Block.new(self, 1, 2, 1).update
-		@blocks << Block.new(self, 1, 3, 1).update
-		@blocks << Block.new(self, 1, 1, 2).update
-		@blocks << Block.new(self, 1, 0, 16).update
+		@grid[1][2] = Block.new(self, 1)
+		@grid[1][3] = Block.new(self, 1)
+		@grid[1][1] = Block.new(self, 2)
+		@grid[1][0] = Block.new(self, 4)
 		@font = Gosu::Font.new(self, Gosu::default_font_name, 20)
 	end
 	def needs_cursor?
 		true
 	end
 	def draw
-		#@blocks.each do |block|
-		#	block.draw
-		#end
 		$HEIGHT.times do |row|
 			$WIDTH.times do |col|
 				unless @grid[row][col].nil?
@@ -95,16 +72,17 @@ class Minigamewindow < Gosu::Window
 						while @grid[row][newpos-1].nil? && newpos > 0
 							newpos-=1
 						end
-						@grid[row][pos].col=newpos
+						@grid[row][newpos] = @grid[row][pos]
+						@grid[row][pos] = nil
 					end
 				end
 				$WIDTH.times do |pos|
 					if not(@grid[row][pos].nil?) && not(@grid[row][pos+1].nil?)
 						if @grid[row][pos].value == @grid[row][pos+1].value
 							newval = 2*@grid[row][pos].value
-							@blocks.delete(@grid[row].delete_at(pos))
-							@blocks.delete(@grid[row].delete_at(pos))
-							@grid[row].insert(pos, Block.new(self, row, pos, newval).enlist)
+							@grid[row].delete_at(pos)
+							@grid[row].delete_at(pos)
+							@grid[row].insert(pos, Block.new(self, newval))
 						end
 					end
 				end
@@ -117,18 +95,18 @@ class Minigamewindow < Gosu::Window
 						while @grid[row][newpos+1].nil? && newpos < $WIDTH-1
 							newpos+=1
 						end
-						@grid[row][pos].col=newpos
+						@grid[row][newpos] = @grid[row][pos]
+						@grid[row][pos] = nil
 					end
 				end
 				($WIDTH-1).downto(1) do |pos|
 					if not(@grid[row][pos].nil?) && not(@grid[row][pos-1].nil?)
 						if @grid[row][pos].value == @grid[row][pos-1].value
 							newval = 2*@grid[row][pos].value
-							@blocks.delete(@grid[row].delete_at(pos-1))
-							@blocks.delete(@grid[row].delete_at(pos-1))
+							@grid[row].delete_at(pos-1)
+							@grid[row].delete_at(pos-1)
 							@grid[row].insert(0, nil)
-							@grid[row].insert(pos, Block.new(self, row, pos, newval).enlist)
-							p grid
+							@grid[row].insert(pos, Block.new(self, newval))
 						end
 					end
 				end
@@ -141,7 +119,8 @@ class Minigamewindow < Gosu::Window
 						while (newrow > 0) && @grid[newrow-1][col].nil?
 							newrow-=1
 						end
-						@grid[row][col].row=newrow
+						@grid[newrow][col] = @grid[row][col]
+						@grid[row][col] = nil
 					end
 				end
 			end
@@ -153,7 +132,8 @@ class Minigamewindow < Gosu::Window
 						while (newrow < $HEIGHT-1) && @grid[newrow+1][col].nil?
 							newrow+=1
 						end
-						@grid[row][col].row=newrow
+						@grid[newrow][col] = @grid[row][col]
+						@grid[row][col] = nil
 					end
 				end
 			end
